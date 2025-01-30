@@ -3,8 +3,10 @@
 Just for kicks.
 
 ⚠️ *Disclaimer: this particular game implementation is politically biased.*
+
 https://merzsweeper.marioniya.space/
 
+![screenshot.png](public/screenshot.png)
 
 ## Project Setup
 

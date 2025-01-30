@@ -1,14 +1,16 @@
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBestTimesStore } from '@/stores/bestTimes'
 import { MINE_COUNT, createGrid, placeMerzMines, countNeighboringMines, checkForWin, getNeighboringCells } from '@/utils/grid'
+import { isMobile } from '@/utils/isMobile'
 import { formatTime } from '@/utils/time'
 
 // Data.
 const seconds = ref(0)
 const intervalId = ref(null)
 const grid = ref([])
+const longPressTimer = ref(null)
 const flaggedCells = ref(0)
 const playing = ref(false)
 const resetting = ref(false)
@@ -18,10 +20,6 @@ const playerName = ref('')
 const router = useRouter()
 
 // Computed.
-const time = computed(() => {
-  return formatTime(seconds.value)
-})
-
 const merzImage = computed(() => {
   if (resetting.value) return '/merz-game-reset.webp'
   return gameLost.value ? '/merz-game-lost.webp' : '/merz-mine.webp'
@@ -101,11 +99,10 @@ const revealCell = (cell) => {
     startTimer()
   }
   if (playing && !cell.isRevealed) {
-    cell.isRevealed = true
     if (cell.isFlagged) {
-      cell.isFlagged = false
-      flaggedCells.value--
+      return
     }
+    cell.isRevealed = true
     if (cell.isMine) {
       gameLost.value = true
       playing.value = false
@@ -148,6 +145,22 @@ const doubleClick = (cell) => {
   }
 }
 
+const startLongPress = (cell) => {
+  if (isMobile()) {
+    longPressTimer.value = setTimeout(() => {
+      if (cell.isRevealed) {
+        doubleClick(cell)
+      } else {
+        flagCell(cell)
+      }
+    }, 850)
+  }
+}
+
+const endLongPress = () => {
+  clearTimeout(longPressTimer.value)
+}
+
 // Mounted.
 onMounted(() => {
   resetGame()
@@ -159,7 +172,7 @@ onMounted(() => {
     <div class="text-center">
       <h1>Merz-Sweeper</h1>
       <p>
-        <strong>Sei vorsichtig! Herr Merz lauert hinter jeder Ecke. 👀</strong>
+        <strong>Sei bloß vorsichtig! Sneaky Herr Merz könnte hinter jeder Ecke lauern. 👀</strong>
       </p>
       <p>
         <RouterLink to="/scoreboard" class="button button--outline">📋 Score Board</RouterLink>
@@ -187,14 +200,13 @@ onMounted(() => {
         </div>
         <div class="reset"
              @click="resetGame"
-             @mousedown="resetting = true"
-             @mouseup="resetting = false"
-             @touchstart="resetting = true"
-             @touchend="resetting = false">
+             @contextmenu.prevent
+             @pointerdown="resetting = true"
+             @pointerup="resetting = false">
           <img :src="merzImage" alt="">
         </div>
         <div class="timer d-flex align-center">
-          {{ time }}
+          {{ formatTime(seconds) }}
         </div>
       </div>
       <div
@@ -206,9 +218,14 @@ onMounted(() => {
           :key="cell"
           class="cell"
           :class="{ 'is-revealed': cell.isRevealed }"
+          :data-row="cell.row"
+          :data-col="cell.col"
           @dblclick="doubleClick(cell)"
-          @click.left="revealCell(cell)"
-          @click.right.prevent="flagCell(cell)">
+          @click.left.prevent="revealCell(cell)"
+          @click.right.prevent="flagCell(cell)"
+          @pointerdown.prevent="startLongPress(cell)"
+          @pointerup.prevent="endLongPress(cell)"
+          @contextmenu.prevent>
           <div
             v-if="cell.isRevealed || (gameLost && cell.isMine)"
             class="cell-content d-flex align-center justify-center"
@@ -221,7 +238,7 @@ onMounted(() => {
               {{ cell.neighboringMines ?? cell.neighboringMines > 0 ? cell.neighboringMines : '' }}
             </template>
           </div>
-          <div v-else-if="cell.isFlagged" class="cell-content">🚩</div>
+          <div v-else-if="cell.isFlagged" class="cell-content d-flex align-center justify-center">🚩</div>
         </div>
       </div>
     </div>
@@ -289,10 +306,10 @@ onMounted(() => {
 .game {
   background: $color-white;
   border-radius: $border-radius;
-  padding: 1.25rem;
+  padding: 1rem;
   margin-block: 2rem;
   margin-inline: auto;
-  max-width: 340px;
+  max-width: 350px;
 
   @include bp(m) {
     padding: 1.5rem;
@@ -302,8 +319,8 @@ onMounted(() => {
 
 .row {
   display: grid;
-  grid-template-columns: repeat(12, 25px);
-  grid-auto-rows: 25px;
+  grid-template-columns: repeat(12, 26px);
+  grid-auto-rows: 26px;
   place-content: center;
 
   @include bp(m) {
@@ -314,7 +331,7 @@ onMounted(() => {
 
 .cell {
   background: $cell-bg;
-  border: 3px solid;
+  border: 2.5px solid;
   border-color: $color-contrast-light $color-contrast-dark $color-contrast-dark $color-contrast-light;
   cursor: pointer;
   user-select: none;
@@ -332,8 +349,12 @@ onMounted(() => {
 .cell-content {
   height: 100%;
   font-family: $font-family-cells;
-  font-size: 1.75rem;
+  font-size: 1.25rem;
   font-weight: 600;
+
+  @include bp(m) {
+    font-size: 1.75rem;
+  }
 
   &.is-mine {
     img {
