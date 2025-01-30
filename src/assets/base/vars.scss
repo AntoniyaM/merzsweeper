@@ -1,0 +1,30 @@
+// Beautiful variable font.
+@font-face {
+  font-family: 'Red Hat';
+  src: url('/RedHatDisplay-VariableFont_wght.ttf') format('truetype-variations');
+  font-weight: 1 999;
+}
+$font-family: 'Red Hat', sans-serif;
+
+// Arcade game font.
+@font-face {
+  font-family: 'Arcade Classic';
+  src: url('/ARCADECLASSIC.TTF') format('truetype');
+}
+$font-family-cells: 'Arcade Classic', 'Red Hat', sans-serif;
+
+// Colors.
+$color-primary: #52b7c1;
+$color-contrast: #ffa600;
+$color-contrast-light: #fffaf1;
+$color-contrast-dark: #cca254;
+$color-text: #2d3c4b;
+$color-bg: rgba($color-primary, 0.1);
+$color-white: #ffffff;
+$color-black: #000000;
+$color-grey: #dedede;
+
+// Misc.
+$border-radius: 6px;
+$cell-bg: linear-gradient(135deg, rgba($color-contrast, 0.1), rgba($color-contrast, 0.5));
+$cell-colors: #185adb #3e8e7e #cf0a0a #590995 #8a0841;
